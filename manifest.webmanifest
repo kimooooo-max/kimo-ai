@@ -1,0 +1,18 @@
+{
+  "name": "카드 기장 도우미",
+  "short_name": "카드기장",
+  "description": "카드 사용 내역 캡쳐에서 날짜, 금액, 사용처, 카테고리를 추출합니다.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#116b5c",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
