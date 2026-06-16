@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>자취 부엌 — 오늘 저녁 뭐 먹지?</title>
+    <meta name="description" content="자취생 저녁 메뉴 랜덤 추천 + 우리집 냉장고 재료 관리 + 냉장고 재료로 만들 수 있는 요리 추천. 단독 실행 웹앱." />
+    <meta name="theme-color" content="#116b5c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="자취부엌" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E%F0%9F%8D%B3%3C/text%3E%3C/svg%3E" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E%F0%9F%8D%B3%3C/text%3E%3C/svg%3E" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f6f8;
+        --surface: #ffffff;
+        --surface-soft: #eef3f7;
+        --ink: #172026;
+        --muted: #697783;
+        --line: #d8e0e6;
+        --accent: #116b5c;
+        --accent-dark: #0b4d42;
+        --accent-soft: #e6f4f0;
+        --danger: #b42318;
+        --shadow: 0 18px 45px rgba(23, 32, 38, 0.1);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(1200px 600px at 50% -10%, #eaf7f3 0%, rgba(234, 247, 243, 0) 60%), var(--bg);
+        color: var(--ink);
+        font-family: Pretendard, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      button { font: inherit; border: 0; cursor: pointer; }
+      a { color: inherit; }
+      input, select, textarea { font: inherit; }
+      .wrap {
+        width: min(560px, 100%);
+        margin: 0 auto;
+        padding: max(18px, env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
+      }
+      .hero { text-align: center; margin: 10px 0 16px; }
+      .eyebrow { margin: 0 0 6px; color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: 0.02em; }
+      h1 { margin: 0; font-size: clamp(26px, 6.5vw, 34px); letter-spacing: -0.01em; }
+      .sub { margin: 9px 0 0; color: var(--muted); line-height: 1.5; font-size: 14.5px; }
+
+      .tabs {
+        display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--line);
+        border-radius: 14px; padding: 6px; margin-bottom: 18px; box-shadow: var(--shadow);
+        position: sticky; top: 8px; z-index: 5; overflow-x: auto;
+      }
+      .tab {
+        flex: 1 1 auto; white-space: nowrap; border-radius: 10px; padding: 10px 8px;
+        font-size: 13.5px; font-weight: 800; color: var(--muted); background: transparent;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+      .tab.active { background: var(--accent); color: #fff; }
+
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip {
+        border: 1px solid var(--line); background: var(--surface); color: #34434e; border-radius: 999px;
+        padding: 9px 14px; font-size: 14px; font-weight: 700;
+        transition: transform 0.08s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      }
+      .chip:active { transform: scale(0.96); }
+      .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(17, 107, 92, 0.25); }
+
+      .filters { display: grid; gap: 12px; margin-bottom: 16px; }
+      .filter-group { display: grid; gap: 8px; }
+      .filter-label { font-size: 12px; font-weight: 800; color: var(--muted); }
+
+      .result-card {
+        position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+        box-shadow: var(--shadow); padding: 28px 22px 24px; text-align: center; min-height: 240px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; overflow: hidden;
+      }
+      .result-emoji { font-size: 68px; line-height: 1; }
+      .result-name { margin: 0; font-size: clamp(24px, 6.5vw, 32px); font-weight: 850; letter-spacing: -0.01em; }
+      .result-tags, .result-ing { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+      .tag { font-size: 12.5px; font-weight: 800; padding: 5px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-dark); }
+      .tag.time { background: #fff4e0; color: #9a6700; }
+      .tag.level1 { background: #e6f4ea; color: #1f7a3d; }
+      .tag.level2 { background: #fff4e0; color: #9a6700; }
+      .tag.level3 { background: #fdeaea; color: #b42318; }
+      .ing { font-size: 12.5px; font-weight: 600; padding: 5px 10px; border-radius: 8px; background: var(--surface-soft); color: #46555f; }
+      .result-tip {
+        margin: 4px 0 0; background: #fffdf5; border: 1px dashed #e7d9a8; color: #6b5a1e;
+        padding: 11px 13px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; text-align: left;
+      }
+      .result-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+      .fav-btn, .recipe-link {
+        display: inline-flex; align-items: center; gap: 4px; text-decoration: none; border-radius: 10px;
+        padding: 9px 13px; font-size: 13.5px; font-weight: 800; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+      }
+      .recipe-link.yt { background: #fff0f0; border-color: #ffd5d5; color: #c4302b; }
+      .fav-btn.on { background: #fdeef0; border-color: #f3c6cf; color: #c2185b; }
+
+      .roll-btn {
+        width: 100%; margin-top: 16px; min-height: 60px; border-radius: 16px;
+        background: linear-gradient(180deg, #15816f 0%, var(--accent) 60%, var(--accent-dark) 100%);
+        color: #fff; font-size: 19px; font-weight: 850; letter-spacing: 0.01em;
+        box-shadow: 0 14px 30px rgba(17, 107, 92, 0.32);
+        transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      }
+      .roll-btn:active { transform: translateY(2px) scale(0.99); box-shadow: 0 8px 18px rgba(17, 107, 92, 0.3); }
+      .roll-btn:disabled { opacity: 0.85; cursor: default; }
+      .cook-roll { min-height: 52px; font-size: 17px; margin: 4px 0 6px; }
+
+      .count { text-align: center; color: var(--muted); font-size: 13px; font-weight: 700; margin: 12px 0 0; }
+      .count.empty { color: var(--danger); }
+
+      .favs { margin-top: 26px; }
+      .favs h3 { margin: 0 0 10px; font-size: 15px; }
+      .fav-list { display: flex; flex-wrap: wrap; gap: 8px; }
+      .fav-chip {
+        display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line);
+        border-radius: 999px; padding: 7px 8px 7px 13px; font-size: 13.5px; font-weight: 700;
+      }
+      .fav-chip button { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-soft); color: var(--muted); font-size: 13px; line-height: 1; display: grid; place-items: center; }
+      .fav-name { cursor: pointer; }
+
+      /* 냉장고 */
+      .panel-help { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin: 0 0 14px; }
+      .fridge-add { display: flex; gap: 8px; margin-bottom: 12px; }
+      .fridge-add input { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fff; outline: none; }
+      .fridge-add input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(17, 107, 92, 0.14); }
+      .primary-sm { background: var(--accent); color: #fff; border-radius: 10px; padding: 0 16px; font-weight: 800; min-height: 46px; }
+      .quick-adds { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+      .quick-add { font-size: 13px; font-weight: 700; border: 1px dashed var(--line); background: var(--surface); color: #46555f; border-radius: 999px; padding: 7px 12px; }
+      .fridge { background: linear-gradient(180deg, #eef6f8, #e1edf1); border: 1px solid var(--line); border-radius: 18px; padding: 16px; min-height: 160px; box-shadow: inset 0 2px 8px rgba(23, 32, 38, 0.05); }
+      .fridge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 10px; }
+      .food { position: relative; aspect-ratio: 1 / 1; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; display: grid; place-items: center; box-shadow: 0 4px 10px rgba(23, 32, 38, 0.07); }
+      .food-emoji { font-size: 38px; line-height: 1; transform: translateY(-6px); }
+      .food-name { position: absolute; left: 6px; right: 6px; bottom: 6px; background: rgba(17, 107, 92, 0.92); color: #fff; border-radius: 8px; padding: 3px 4px; font-size: 11.5px; font-weight: 800; text-align: center; word-break: keep-all; line-height: 1.25; }
+      .food-x { position: absolute; top: -7px; right: -7px; width: 23px; height: 23px; border-radius: 50%; background: #fff; border: 1px solid var(--line); color: var(--muted); font-size: 12px; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14); }
+      .fridge-empty { color: var(--muted); text-align: center; font-weight: 700; padding: 34px 10px; }
+      .ghost-danger { margin-top: 14px; width: 100%; background: #fff1f0; border: 1px solid #ffd2cc; color: var(--danger); border-radius: 12px; min-height: 46px; font-weight: 800; }
+
+      /* 냉장고 요리 */
+      .staples-toggle { display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 700; color: #34434e; margin-bottom: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; cursor: pointer; }
+      .staples-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+      .cook-section-title { font-size: 14px; font-weight: 850; margin: 18px 0 10px; }
+      .cook-card { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; box-shadow: 0 4px 10px rgba(23, 32, 38, 0.05); margin-bottom: 10px; }
+      .cook-emoji { font-size: 34px; line-height: 1; }
+      .cook-body { flex: 1; min-width: 0; }
+      .cook-name { font-weight: 850; font-size: 16px; }
+      .cook-meta { font-size: 12.5px; color: var(--muted); margin: 3px 0 8px; font-weight: 700; }
+      .cook-missing { display: flex; flex-wrap: wrap; gap: 5px; }
+      .miss { font-size: 12px; font-weight: 700; background: #fdeaea; color: #b42318; border-radius: 7px; padding: 4px 8px; }
+      .miss.ok { background: #e6f4ea; color: #1f7a3d; }
+      .cook-links { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+      .info-block { text-align: center; background: var(--surface); border: 1px dashed var(--line); border-radius: 16px; padding: 26px 18px; }
+      .info-block strong { display: block; font-size: 16px; margin-bottom: 6px; }
+      .info-block p { margin: 0 0 14px; color: var(--muted); line-height: 1.5; font-size: 13.5px; }
+      .prep-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+      .ptag { font-size: 11.5px; font-weight: 800; border-radius: 999px; padding: 4px 9px; }
+      .ptag.kind { background: var(--accent-soft); color: var(--accent-dark); }
+      .ptag.portion { background: #eef3f7; color: #46555f; }
+      .ptag.keep { background: #fff4e0; color: #9a6700; }
+      .tag.serve1 { background: #eef3f7; color: #46555f; }
+      .tag.serve2 { background: #e6efff; color: #1d4ed8; }
+      .tag.serve4 { background: #efeaff; color: #6d28d9; }
+
+      /* 메뉴 관리 */
+      .menu-form { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); margin-bottom: 18px; }
+      .menu-form h3 { margin: 0 0 2px; font-size: 16px; }
+      .menu-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .menu-form input, .menu-form select, .menu-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; background: #fff; outline: none; }
+      .menu-form input:focus, .menu-form select:focus, .menu-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(17, 107, 92, 0.14); }
+      .menu-form textarea { resize: vertical; line-height: 1.5; }
+      .menu-form-actions { display: flex; gap: 8px; }
+      .ghost { background: var(--surface); border: 1px solid var(--line); color: #46555f; border-radius: 10px; padding: 0 16px; min-height: 46px; font-weight: 800; }
+      .menu-list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+      .menu-list-head h3 { margin: 0; font-size: 15px; }
+      .menu-list-head input { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; max-width: 50%; background: #fff; outline: none; }
+      .menu-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+      .menu-row .emo { font-size: 24px; }
+      .menu-row .info { flex: 1; min-width: 0; }
+      .menu-row .nm { font-weight: 800; }
+      .menu-row .mt { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 2px; }
+      .badge { font-size: 10.5px; font-weight: 800; border-radius: 6px; padding: 2px 6px; margin-left: 6px; vertical-align: middle; }
+      .badge.custom { background: #e6f4f0; color: var(--accent-dark); }
+      .badge.edited { background: #fff4e0; color: #9a6700; }
+      .menu-row .ops { display: flex; gap: 6px; }
+      .icon-btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12.5px; font-weight: 800; color: #46555f; }
+      .icon-btn.del { background: #fff1f0; border-color: #ffd2cc; color: var(--danger); }
+
+      .foot { margin-top: 30px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.6; }
+      .foot strong { color: var(--ink); }
+
+      .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 20px); background: #172026; color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 14px; font-weight: 800; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; z-index: 50; }
+      .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+      @keyframes pop { 0% { transform: scale(0.96); } 55% { transform: scale(1.03); } 100% { transform: scale(1); } }
+      @keyframes shake { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+      .result-card.pop { animation: pop 0.42s cubic-bezier(0.2, 0.8, 0.2, 1); }
+      .result-card.teasing .result-emoji { animation: shake 0.3s linear infinite; }
+
+      @media (min-width: 560px) { .result-emoji { font-size: 80px; } }
+      @media (prefers-reduced-motion: reduce) {
+        .result-card.pop, .result-card.teasing .result-emoji { animation: none; }
+        * { transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <p class="eyebrow">자취생 저녁 도우미</p>
+        <h1>자취 부엌 🍳</h1>
+        <p class="sub">오늘 뭐 먹지? 냉장고 털어 한 끼까지 한 방에.</p>
+      </header>
+
+      <nav class="tabs" id="tabs">
+        <button class="tab active" type="button" data-tab="roll">🎲 추천</button>
+        <button class="tab" type="button" data-tab="fridge">🧊 냉장고</button>
+        <button class="tab" type="button" data-tab="cook">🍳 냉장고요리</button>
+        <button class="tab" type="button" data-tab="prep">🥡 밀프랩</button>
+        <button class="tab" type="button" data-tab="menu">📝 메뉴</button>
+      </nav>
+
+      <!-- 탭: 저녁 룰렛 -->
+      <section id="tab-roll" class="tab-panel">
+        <div class="filters" aria-label="메뉴 필터">
+          <div class="filter-group">
+            <span class="filter-label">종류</span>
+            <div class="chips" id="catChips"></div>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">난이도</span>
+            <div class="chips" id="levelChips"></div>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">인원</span>
+            <div class="chips" id="serveChips"></div>
+          </div>
+        </div>
+
+        <section class="result-card" id="resultCard" aria-live="polite">
+          <div class="result-emoji" id="resultEmoji">🍽️</div>
+          <h2 class="result-name" id="resultName">버튼을 누르면 메뉴가 떠요</h2>
+          <div class="result-tags" id="resultTags"></div>
+          <div class="result-ing" id="resultIng"></div>
+          <p class="result-tip" id="resultTip" hidden></p>
+          <div class="result-actions" id="resultActions" hidden>
+            <button class="fav-btn" id="favBtn" type="button">🤍 찜</button>
+            <a class="recipe-link yt" id="ytLink" target="_blank" rel="noopener">▶ 유튜브 레시피</a>
+            <a class="recipe-link" id="recipeLink" target="_blank" rel="noopener">📖 만개의레시피</a>
+          </div>
+        </section>
+
+        <button class="roll-btn" id="rollBtn" type="button">🎲 오늘 저녁 추천!</button>
+        <p class="count" id="count"></p>
+
+        <section class="favs" id="favs" hidden>
+          <h3>🔖 찜한 메뉴</h3>
+          <div class="fav-list" id="favList"></div>
+        </section>
+      </section>
+
+      <!-- 탭: 우리집 냉장고 -->
+      <section id="tab-fridge" class="tab-panel" hidden>
+        <p class="panel-help">가진 재료를 넣어 두면 아이콘으로 냉장고에 쏙. 쉼표로 여러 개 한 번에 넣을 수 있어요. (예: 계란, 김치, 두부)</p>
+        <div class="fridge-add">
+          <input id="fridgeInput" type="text" placeholder="재료 이름 입력 후 담기" autocomplete="off" />
+          <button id="fridgeAddBtn" class="primary-sm" type="button">담기</button>
+        </div>
+        <div class="quick-adds" id="quickAdds"></div>
+        <div class="fridge">
+          <div class="fridge-empty" id="fridgeEmpty">냉장고가 비었어요. 위에서 재료를 넣어 보세요 🧊</div>
+          <div class="fridge-grid" id="fridgeGrid"></div>
+        </div>
+        <p class="count" id="fridgeCount"></p>
+        <button id="fridgeClear" class="ghost-danger" type="button" hidden>냉장고 비우기</button>
+      </section>
+
+      <!-- 탭: 냉장고 요리 -->
+      <section id="tab-cook" class="tab-panel" hidden>
+        <label class="staples-toggle">
+          <input type="checkbox" id="staplesToggle" checked />
+          기본 양념(소금·기름·간장·설탕 등)은 있다고 치기
+        </label>
+        <div id="cookContent"></div>
+      </section>
+
+      <!-- 탭: 밀프랩 -->
+      <section id="tab-prep" class="tab-panel" hidden>
+        <p class="panel-help">한 번 만들어 두고 3~5끼! 보관 잘 되는 밀프랩 메뉴예요. 분량·보관 기간·꿀팁까지 확인하세요.</p>
+        <button id="prepRandomBtn" class="roll-btn cook-roll" type="button">🎲 이번 주 밀프랩 정해줘</button>
+        <div id="prepFeatured"></div>
+        <div id="prepList"></div>
+      </section>
+
+      <!-- 탭: 메뉴 관리 -->
+      <section id="tab-menu" class="tab-panel" hidden>
+        <form id="menuForm" class="menu-form" autocomplete="off">
+          <h3 id="menuFormTitle">새 메뉴 추가</h3>
+          <input id="mName" type="text" placeholder="메뉴 이름 (예: 엄마표 김치볶음밥)" />
+          <div class="row2">
+            <input id="mEmoji" type="text" placeholder="이모지 (예: 🍳)" maxlength="6" />
+            <input id="mTime" type="number" min="1" placeholder="예상 시간(분)" />
+          </div>
+          <div class="row2">
+            <select id="mCat">
+              <option value="bap">밥·한그릇</option>
+              <option value="noodle">면</option>
+              <option value="soup">국물·찌개</option>
+              <option value="side">간단·한 접시</option>
+              <option value="hearty">든든하게</option>
+            </select>
+            <select id="mLevel">
+              <option value="1">⚡ 초간단</option>
+              <option value="2">🍳 보통</option>
+              <option value="3">🔥 제대로</option>
+            </select>
+          </div>
+          <select id="mServe">
+            <option value="1">🧍 1인 (자취 간단)</option>
+            <option value="2">👥 2인 (가정 식사)</option>
+            <option value="4">👨‍👩‍👧‍👦 대용량 (4인+)</option>
+          </select>
+          <input id="mIng" type="text" placeholder="재료 (쉼표로 구분: 밥, 계란, 김치, 대파)" />
+          <textarea id="mTip" rows="2" placeholder="한 줄 꿀팁 (선택)"></textarea>
+          <div class="menu-form-actions">
+            <button type="submit" class="primary-sm" style="flex:1">저장</button>
+            <button type="button" id="menuCancel" class="ghost" hidden>취소</button>
+          </div>
+        </form>
+
+        <div class="menu-list-head">
+          <h3>메뉴 목록 (<span id="menuTotal">0</span>)</h3>
+          <input id="menuSearch" type="text" placeholder="메뉴 검색" />
+        </div>
+        <div id="menuList"></div>
+      </section>
+
+      <footer class="foot">
+        <p>도저히 안 땡기면? <strong>그냥 시켜 먹어요.</strong> 그것도 훌륭한 저녁입니다 🛵</p>
+      </footer>
+    </main>
+
+    <script>
+      // ===== 기본 내장 메뉴 (자취 1인분 기준) =====
+      const BUILTIN_MENUS = [
+        { name: "김치볶음밥", emoji: "🍳", cat: "bap", level: 1, time: 15, ing: ["밥", "익은 김치", "계란", "대파", "참기름"], tip: "김치를 기름에 먼저 달달 볶아 신맛을 날린 뒤 밥을 넣으면 훨씬 깊은 맛이 나요." },
+        { name: "계란볶음밥", emoji: "🍚", cat: "bap", level: 1, time: 10, ing: ["밥", "계란", "대파", "간장", "굴소스"], tip: "센 불에 파기름부터 내고 밥을 넣으면 고슬고슬 중국집 스타일이 돼요." },
+        { name: "참치마요덮밥", emoji: "🐟", cat: "bap", level: 1, time: 8, ing: ["밥", "참치캔", "마요네즈", "간장", "김가루"], tip: "참치 기름은 살짝만 빼고 마요와 간장 조금이면 끝. 계란프라이를 얹으면 완벽해요." },
+        { name: "스팸마요덮밥", emoji: "🥫", cat: "bap", level: 1, time: 12, ing: ["밥", "스팸", "계란", "마요네즈", "김가루"], tip: "스팸은 키친타올로 기름을 한 번 닦고 구우면 덜 짜고 더 고소해요." },
+        { name: "제육덮밥", emoji: "🌶️", cat: "bap", level: 2, time: 20, ing: ["밥", "앞다리살", "고추장", "양파", "대파"], tip: "고기에 양념을 20분만 미리 재워두면 맛이 확 배어요." },
+        { name: "카레라이스", emoji: "🍛", cat: "bap", level: 1, time: 25, ing: ["밥", "고형카레", "감자", "당근", "양파"], tip: "고형카레 2조각이면 1~2인분. 우유 한 스푼 넣으면 부드러워져요." },
+        { name: "오므라이스", emoji: "🍳", cat: "bap", level: 2, time: 20, ing: ["밥", "계란", "케첩", "양파", "햄"], tip: "밥은 케첩에 미리 볶고, 계란은 반숙으로 덮으면 보들보들해요." },
+        { name: "비빔밥", emoji: "🥗", cat: "bap", level: 1, time: 12, ing: ["밥", "계란프라이", "애호박", "당근", "고추장"], tip: "냉장고 자투리 채소 다 넣고 참기름·고추장이면 실패가 없어요." },
+        { name: "새우볶음밥", emoji: "🍤", cat: "bap", level: 1, time: 15, ing: ["밥", "냉동새우", "계란", "대파", "굴소스"], tip: "냉동새우는 찬물에 5분 담가 해동하고 물기를 꼭 빼세요." },
+        { name: "소고기덮밥", emoji: "🥩", cat: "bap", level: 2, time: 20, ing: ["밥", "소불고기감", "양파", "간장", "설탕"], tip: "양파를 푹 익혀 단맛을 끌어내면 일본식 규동 맛이 나요." },
+        { name: "마파두부덮밥", emoji: "🌶️", cat: "bap", level: 2, time: 20, ing: ["밥", "두부", "다진 돼지고기", "두반장", "대파"], tip: "두부는 끓는 소금물에 살짝 데치면 안 부서지고 간도 잘 배요." },
+        { name: "김치알밥", emoji: "🍳", cat: "bap", level: 1, time: 12, ing: ["밥", "김치", "날치알", "계란", "김가루"], tip: "뚝배기에 참기름 두르고 누룽지처럼 살짝 태우면 더 맛있어요." },
+        { name: "오징어덮밥", emoji: "🦑", cat: "bap", level: 2, time: 20, ing: ["밥", "오징어", "양파", "고추장", "대파"], tip: "해물은 센 불에 빠르게 볶아야 질겨지지 않아요." },
+        { name: "닭갈비볶음밥", emoji: "🍗", cat: "bap", level: 2, time: 25, ing: ["밥", "닭다리살", "고추장", "양배추", "깻잎"], tip: "닭갈비 먹고 남은 양념에 밥을 볶으면 그게 진짜 별미죠." },
+        { name: "콩나물밥", emoji: "🌱", cat: "bap", level: 2, time: 25, ing: ["쌀", "콩나물", "양념간장", "대파", "참기름"], tip: "밥물을 평소보다 적게 잡아야 질지 않아요. 양념간장에 쓱쓱 비벼 드세요." },
+        { name: "라면", emoji: "🍜", cat: "noodle", level: 1, time: 7, ing: ["라면", "계란", "대파"], tip: "물 550ml에 스프를 먼저 풀고, 끓으면 면을 넣으세요. 계란은 마지막 30초에." },
+        { name: "짜파게티", emoji: "🍝", cat: "noodle", level: 1, time: 10, ing: ["짜파게티", "계란프라이", "냉동채소"], tip: "면수를 8숟갈만 남기고 버려야 꼬들꼬들하게 비벼져요." },
+        { name: "콩나물 해장라면", emoji: "🌶️", cat: "noodle", level: 1, time: 8, ing: ["라면", "콩나물", "청양고추", "계란", "대파"], tip: "콩나물 한 줌이면 국물이 시원해져요. 뚜껑 덮고 끝까지 안 열기." },
+        { name: "비빔면", emoji: "🌶️", cat: "noodle", level: 1, time: 8, ing: ["비빔면", "오이", "계란", "김가루"], tip: "면을 찬물에 여러 번 헹궈 전분기를 빼야 쫄깃해요." },
+        { name: "잔치국수", emoji: "🍜", cat: "noodle", level: 1, time: 15, ing: ["소면", "멸치다시팩", "애호박", "계란지단", "김가루"], tip: "국물은 멸치·다시마로 5분이면 충분. 소면은 따로 삶아 찬물에 헹구세요." },
+        { name: "비빔국수", emoji: "🌶️", cat: "noodle", level: 1, time: 12, ing: ["소면", "고추장", "오이", "설탕", "식초"], tip: "고추장·고춧가루·설탕·식초를 비슷한 비율로 하면 새콤달콤해요." },
+        { name: "토마토 파스타", emoji: "🍅", cat: "noodle", level: 2, time: 20, ing: ["스파게티면", "토마토소스", "마늘", "양파"], tip: "면수 한 국자를 소스에 넣으면 소스가 면에 착 붙어요." },
+        { name: "알리오올리오", emoji: "🧄", cat: "noodle", level: 2, time: 18, ing: ["스파게티면", "마늘", "올리브유", "페페론치노"], tip: "마늘은 약한 불에서 천천히 익혀 향을 기름에 충분히 우려내세요." },
+        { name: "크림 파스타", emoji: "🥛", cat: "noodle", level: 2, time: 20, ing: ["스파게티면", "생크림", "베이컨", "마늘"], tip: "우유보다 생크림이 안 분리돼요. 슬라이스 치즈 한 장 녹이면 더 진해요." },
+        { name: "로제 파스타", emoji: "🌸", cat: "noodle", level: 2, time: 22, ing: ["스파게티면", "토마토소스", "생크림", "베이컨"], tip: "토마토소스와 크림을 2:1로 섞으면 분홍빛 로제가 완성돼요." },
+        { name: "볶음우동", emoji: "🍳", cat: "noodle", level: 1, time: 15, ing: ["우동면", "양배추", "어묵", "간장", "굴소스"], tip: "우동면은 끓는 물에 30초만 풀어 바로 볶아야 안 불어요." },
+        { name: "가락우동", emoji: "🍲", cat: "noodle", level: 1, time: 12, ing: ["우동면", "쯔유", "어묵", "대파"], tip: "쯔유 1 : 물 7 비율이면 간이 딱 맞아요." },
+        { name: "김치말이국수", emoji: "❄️", cat: "noodle", level: 1, time: 12, ing: ["소면", "김치국물", "김치", "오이", "얼음"], tip: "김치국물에 물·설탕 약간, 얼음 동동. 여름 저녁에 최고예요." },
+        { name: "떡라면", emoji: "🍜", cat: "noodle", level: 1, time: 10, ing: ["라면", "떡국떡", "계란", "대파"], tip: "떡은 미리 물에 불려두면 라면과 같이 익어요." },
+        { name: "메밀소바", emoji: "🍱", cat: "noodle", level: 1, time: 12, ing: ["메밀면", "쯔유", "무", "김가루"], tip: "면을 찬물에 바짝 헹궈 차갑게, 무는 갈아서 쯔유에 풀어요." },
+        { name: "해물 토마토 파스타", emoji: "🦐", cat: "noodle", level: 3, time: 30, ing: ["스파게티면", "냉동해물", "토마토소스", "마늘", "올리브유"], tip: "해물은 따로 볶아 빼두었다가 마지막에 합쳐야 안 질겨요." },
+        { name: "김치찌개", emoji: "🍲", cat: "soup", level: 2, time: 25, ing: ["신김치", "돼지고기", "두부", "대파"], tip: "고기를 먼저 볶다가 김치를 넣어 같이 볶은 뒤 물을 부어야 깊은 맛이 나요." },
+        { name: "된장찌개", emoji: "🍲", cat: "soup", level: 1, time: 20, ing: ["된장", "두부", "애호박", "양파", "청양고추"], tip: "된장은 끓기 직전에 풀어야 구수한 향이 안 날아가요." },
+        { name: "순두부찌개", emoji: "🌶️", cat: "soup", level: 2, time: 18, ing: ["순두부", "계란", "고춧가루", "바지락", "대파"], tip: "기름에 고춧가루를 살짝 볶아 고추기름을 내면 색과 맛이 확 살아요." },
+        { name: "부대찌개", emoji: "🍲", cat: "soup", level: 2, time: 25, ing: ["스팸", "소시지", "라면사리", "김치", "베이크드빈"], tip: "베이크드빈 한 스푼이 들어가야 그 분식집 부대찌개 맛이 나요." },
+        { name: "참치김치찌개", emoji: "🐟", cat: "soup", level: 1, time: 20, ing: ["신김치", "참치캔", "두부", "대파"], tip: "고기 대신 참치캔이면 5분 더 빨라요. 참치는 마지막에 넣으세요." },
+        { name: "미역국", emoji: "🍲", cat: "soup", level: 1, time: 25, ing: ["건미역", "소고기", "국간장", "참기름"], tip: "불린 미역을 참기름에 충분히 볶아야 뽀얗고 진한 국물이 나와요." },
+        { name: "계란국", emoji: "🥚", cat: "soup", level: 1, time: 10, ing: ["계란", "대파", "국간장", "다진마늘"], tip: "끓는 국물에 계란을 천천히 돌려 부으면 몽글몽글 예쁘게 익어요." },
+        { name: "콩나물국", emoji: "🌱", cat: "soup", level: 1, time: 15, ing: ["콩나물", "대파", "국간장", "다진마늘"], tip: "뚜껑은 처음부터 끝까지 열거나 닫거나 하나로. 중간에 열면 비려요." },
+        { name: "어묵탕", emoji: "🍢", cat: "soup", level: 1, time: 20, ing: ["어묵", "무", "대파", "멸치육수"], tip: "무를 먼저 푹 끓여 단맛을 우려낸 뒤 어묵을 넣으세요." },
+        { name: "떡국", emoji: "🥟", cat: "soup", level: 1, time: 20, ing: ["떡국떡", "계란", "김", "멸치육수"], tip: "떡은 찬물에 잠깐 불려 넣으면 더 빨리 부드럽게 익어요." },
+        { name: "만둣국", emoji: "🥟", cat: "soup", level: 1, time: 15, ing: ["냉동만두", "계란", "대파", "멸치육수"], tip: "냉동만두는 해동 없이 바로. 계란 풀어 마무리하면 든든해요." },
+        { name: "북엇국", emoji: "🐟", cat: "soup", level: 1, time: 20, ing: ["북어채", "계란", "무", "참기름"], tip: "북어채를 참기름에 달달 볶다가 물을 부으면 뽀얀 국물이 우러나요." },
+        { name: "육개장", emoji: "🌶️", cat: "soup", level: 3, time: 50, ing: ["양지", "고사리", "숙주", "대파", "고춧가루"], tip: "대파를 듬뿍, 고기는 결대로 찢어 넣어야 제대로 된 육개장이에요." },
+        { name: "계란말이", emoji: "🍳", cat: "side", level: 1, time: 12, ing: ["계란", "대파", "당근", "맛소금"], tip: "약불에서 천천히, 반쯤 익었을 때 돌돌 말면 안 터져요." },
+        { name: "계란찜", emoji: "🥚", cat: "side", level: 1, time: 15, ing: ["계란", "새우젓", "대파", "물"], tip: "계란과 물을 1:1로, 한 번 체에 내리면 푸딩처럼 부드러워요." },
+        { name: "두부김치", emoji: "🍲", cat: "side", level: 1, time: 15, ing: ["두부", "김치", "돼지고기", "대파"], tip: "두부는 데치거나 굽고, 김치는 설탕 약간 넣고 볶으면 궁합 최고." },
+        { name: "김치전", emoji: "🥞", cat: "side", level: 1, time: 15, ing: ["김치", "부침가루", "물", "청양고추"], tip: "반죽은 약간 되직하게, 기름 넉넉히 둘러 바삭하게 부치세요." },
+        { name: "떡볶이", emoji: "🌶️", cat: "side", level: 1, time: 15, ing: ["떡볶이떡", "고추장", "어묵", "대파", "설탕"], tip: "물에 고추장·고춧가루·설탕을 풀고 떡을 넣어 졸이면 끝." },
+        { name: "라볶이", emoji: "🍜", cat: "side", level: 1, time: 18, ing: ["떡볶이떡", "라면", "어묵", "고추장"], tip: "라면 스프는 반만 넣어야 안 짜고 떡볶이 맛이 살아요." },
+        { name: "스팸구이와 계란", emoji: "🥫", cat: "side", level: 1, time: 8, ing: ["스팸", "계란", "김치", "밥"], tip: "바쁜 날 최고의 한 끼. 스팸은 얇게 썰어 노릇하게 구우세요." },
+        { name: "어묵볶음", emoji: "🍢", cat: "side", level: 1, time: 12, ing: ["어묵", "간장", "설탕", "대파"], tip: "간장·설탕·물엿을 조금 넣고 졸이면 반찬으로 며칠 가요." },
+        { name: "소시지야채볶음", emoji: "🌭", cat: "side", level: 1, time: 12, ing: ["소시지", "양파", "피망", "케첩"], tip: "소시지에 칼집을 내면 양념도 잘 배고 모양도 예뻐요." },
+        { name: "감자채볶음", emoji: "🥔", cat: "side", level: 1, time: 15, ing: ["감자", "당근", "소금", "식용유"], tip: "채 썬 감자를 찬물에 헹궈 전분을 빼면 안 들러붙어요." },
+        { name: "김밥", emoji: "🍙", cat: "side", level: 2, time: 25, ing: ["밥", "단무지", "계란", "햄", "시금치"], tip: "밥에 참기름·소금으로 밑간하고 꾹꾹 눌러 말면 안 터져요." },
+        { name: "길거리 토스트", emoji: "🍞", cat: "side", level: 1, time: 12, ing: ["식빵", "계란", "양배추", "설탕", "케첩"], tip: "양배추 계란전을 부쳐 끼우고 설탕 솔솔, 케첩으로 마무리." },
+        { name: "케사디아", emoji: "🫓", cat: "side", level: 1, time: 15, ing: ["또띠아", "슬라이스 치즈", "햄", "피자소스"], tip: "약불에 눌러 구워야 치즈가 녹고 또띠아가 바삭해져요." },
+        { name: "군만두", emoji: "🥟", cat: "side", level: 1, time: 10, ing: ["냉동만두", "식용유", "간장", "식초"], tip: "기름 두르고 물 두 스푼 넣어 뚜껑 덮으면 겉바속촉." },
+        { name: "두부조림", emoji: "🟫", cat: "side", level: 1, time: 20, ing: ["두부", "간장", "고춧가루", "대파"], tip: "두부를 노릇하게 구운 뒤 양념을 끼얹어 졸이면 간이 잘 배요." },
+        { name: "애호박전", emoji: "🥞", cat: "side", level: 1, time: 15, ing: ["애호박", "부침가루", "계란", "식용유"], tip: "애호박은 0.5cm로 썰어 소금에 살짝 절였다 부치면 더 달아요." },
+        { name: "제육볶음", emoji: "🌶️", cat: "hearty", level: 2, time: 25, ing: ["앞다리살", "고추장", "양파", "대파", "마늘"], tip: "센 불에서 빠르게 볶아야 고기가 안 질기고 불맛이 나요." },
+        { name: "닭갈비", emoji: "🍗", cat: "hearty", level: 2, time: 30, ing: ["닭다리살", "고추장", "양배추", "고구마", "떡"], tip: "양념에 30분 재운 닭이 훨씬 맛있어요. 마지막에 치즈 추가!" },
+        { name: "닭볶음탕", emoji: "🍗", cat: "hearty", level: 3, time: 40, ing: ["닭", "감자", "당근", "고추장", "간장"], tip: "닭은 끓는 물에 한 번 데쳐 기름과 잡내를 빼면 국물이 깔끔해요." },
+        { name: "돈까스", emoji: "🍖", cat: "hearty", level: 3, time: 30, ing: ["돼지등심", "빵가루", "계란", "밀가루"], tip: "밀가루→계란→빵가루 순서. 기름은 빵가루가 바로 떠오르는 170도에서." },
+        { name: "함박스테이크", emoji: "🍴", cat: "hearty", level: 3, time: 30, ing: ["다진고기", "양파", "빵가루", "계란", "데미소스"], tip: "반죽을 충분히 치대 공기를 빼야 구울 때 안 갈라져요." },
+        { name: "닭가슴살 스테이크", emoji: "🥗", cat: "hearty", level: 1, time: 20, ing: ["닭가슴살", "양상추", "방울토마토", "발사믹"], tip: "닭가슴살에 칼집을 내고 구우면 속까지 빨리 익고 부드러워요." },
+        { name: "고등어구이", emoji: "🐟", cat: "hearty", level: 1, time: 15, ing: ["고등어", "소금", "식용유", "레몬"], tip: "껍질 쪽부터 노릇하게, 뒤집은 뒤엔 불을 줄여 속까지 익혀요." },
+        { name: "삼겹살구이", emoji: "🥓", cat: "hearty", level: 1, time: 15, ing: ["삼겹살", "쌈장", "상추", "마늘"], tip: "노릇하게 구운 뒤 키친타올로 기름을 한 번 빼면 더 담백해요." },
+        { name: "소불고기", emoji: "🥩", cat: "hearty", level: 2, time: 25, ing: ["소불고기감", "간장", "배", "양파", "당근"], tip: "간 배나 사과를 넣으면 고기가 연해지고 단맛이 자연스러워요." },
+        { name: "잡채", emoji: "🥢", cat: "hearty", level: 3, time: 35, ing: ["당면", "시금치", "당근", "양파", "간장"], tip: "당면은 삶아 바로 양념에 무쳐야 불지 않아요. 채소는 따로 볶기." },
+        { name: "코다리조림", emoji: "🐟", cat: "hearty", level: 2, time: 30, ing: ["코다리", "무", "고춧가루", "간장", "대파"], tip: "무를 바닥에 깔고 그 위에 코다리를 올려 졸이면 비리지 않아요." },
+        { name: "닭다리 오븐구이", emoji: "🍗", cat: "hearty", level: 2, time: 35, ing: ["닭다리", "소금", "후추", "올리브유", "로즈마리"], tip: "에어프라이어 200도 25분이면 겉바속촉. 중간에 한 번 뒤집기." },
+        // ===== 2인 가정 식사 (serve: 2) =====
+        { name: "전주식 비빔밥", emoji: "🥗", cat: "bap", level: 2, time: 25, serve: 2, ing: ["밥", "소고기", "콩나물", "애호박", "고사리", "고추장"], tip: "나물은 색깔별로 둘러 담고 약고추장과 참기름으로 비비면 그럴듯해요." },
+        { name: "버섯 영양솥밥", emoji: "🍚", cat: "bap", level: 2, time: 35, serve: 2, ing: ["쌀", "표고버섯", "당근", "은행", "양념간장"], tip: "밥물을 살짝 적게 잡고 뜸 들인 뒤 양념간장에 슥슥 비벼요." },
+        { name: "바지락 칼국수", emoji: "🍜", cat: "noodle", level: 2, time: 30, serve: 2, ing: ["칼국수면", "바지락", "애호박", "멸치육수", "대파"], tip: "바지락은 해감 후 마지막에 넣어 입을 벌리면 바로 불을 꺼요." },
+        { name: "콩국수", emoji: "🥛", cat: "noodle", level: 1, time: 25, serve: 2, ing: ["소면", "콩물", "오이", "소금", "토마토"], tip: "시판 콩물이면 면만 삶으면 끝. 소금 간은 먹기 직전에 하세요." },
+        { name: "들깨 수제비", emoji: "🌾", cat: "noodle", level: 2, time: 30, serve: 2, ing: ["수제비반죽", "들깨가루", "애호박", "감자", "멸치육수"], tip: "반죽은 얇게 떼어 넣고, 들깨가루는 마지막에 풀어야 안 텁텁해요." },
+        { name: "소고기 무국", emoji: "🍲", cat: "soup", level: 2, time: 30, serve: 2, ing: ["소고기", "무", "대파", "국간장", "다진마늘"], tip: "소고기와 무를 참기름에 먼저 볶다가 물을 부으면 국물이 시원해요." },
+        { name: "동태찌개", emoji: "🐟", cat: "soup", level: 2, time: 30, serve: 2, ing: ["동태", "무", "두부", "고춧가루", "미나리"], tip: "무를 먼저 끓여 시원하게, 미나리는 마지막에 살짝 넣어요." },
+        { name: "묵은지 김치찜", emoji: "🍲", cat: "soup", level: 3, time: 45, serve: 2, ing: ["묵은지", "돼지고기", "양파", "대파", "들기름"], tip: "묵은지와 고기를 들기름에 볶다 물을 자작하게 붓고 푹 졸여요." },
+        { name: "청국장찌개", emoji: "🍲", cat: "soup", level: 2, time: 25, serve: 2, ing: ["청국장", "두부", "김치", "애호박", "대파"], tip: "끓기 직전에 청국장을 풀어야 구수한 향이 살아요." },
+        { name: "갈비탕", emoji: "🍲", cat: "soup", level: 3, time: 90, serve: 2, ing: ["소갈비", "무", "대파", "당면", "다진마늘"], tip: "갈비는 핏물 빼고 한 번 데친 뒤 푹 고아야 국물이 맑아요." },
+        { name: "해물파전", emoji: "🥞", cat: "side", level: 2, time: 25, serve: 2, ing: ["부침가루", "쪽파", "오징어", "새우", "계란"], tip: "약불에서 오래 부쳐야 속까지 익고 바삭해요. 계란은 윗면에 살짝." },
+        { name: "모둠전", emoji: "🍳", cat: "side", level: 2, time: 35, serve: 2, ing: ["동그랑땡", "애호박", "부침가루", "계란", "맛살"], tip: "계란옷 입혀 약불에 노릇하게. 명절 느낌 한 접시 완성." },
+        { name: "가지볶음", emoji: "🍆", cat: "side", level: 1, time: 15, serve: 2, ing: ["가지", "간장", "마늘", "대파", "참기름"], tip: "가지는 소금에 살짝 절여 물기를 짜면 기름을 덜 먹어요." },
+        { name: "애호박 새우젓볶음", emoji: "🥒", cat: "side", level: 1, time: 12, serve: 2, ing: ["애호박", "새우젓", "대파", "다진마늘", "참기름"], tip: "간은 소금 대신 새우젓으로. 센 불에 빠르게 볶아 아삭하게." },
+        { name: "소불고기 전골", emoji: "🍲", cat: "hearty", level: 2, time: 30, serve: 2, ing: ["소불고기감", "양파", "당근", "대파", "당면"], tip: "양념 고기에 육수 자작하게 붓고 당면을 넣어 끓이면 2인 전골 완성." },
+        { name: "돼지갈비찜", emoji: "🍖", cat: "hearty", level: 3, time: 70, serve: 2, ing: ["돼지갈비", "무", "당근", "간장", "대파"], tip: "갈비는 데쳐서 잡내를 빼고, 압력솥이면 시간이 절반이에요." },
+        { name: "찜닭", emoji: "🍗", cat: "hearty", level: 3, time: 50, serve: 2, ing: ["닭", "감자", "당근", "당면", "간장"], tip: "마지막에 당면을 넣어 양념을 빨아들이게 하면 꿀맛이에요." },
+        { name: "보쌈", emoji: "🥩", cat: "hearty", level: 3, time: 60, serve: 2, ing: ["돼지목살", "된장", "대파", "마늘", "새우젓"], tip: "된장·커피 한 스푼·대파를 넣고 삶으면 잡내가 잡혀요." },
+        { name: "수육", emoji: "🥩", cat: "hearty", level: 2, time: 60, serve: 2, ing: ["돼지고기", "된장", "통후추", "대파", "마늘"], tip: "끓는 물에 향신채와 함께, 젓가락이 쑥 들어가면 완성." },
+        { name: "갈치조림", emoji: "🐟", cat: "hearty", level: 2, time: 35, serve: 2, ing: ["갈치", "무", "고춧가루", "간장", "대파"], tip: "무를 바닥에 깔고 양념을 끼얹어 가며 졸여야 깊은 맛이 나요." },
+        { name: "고등어조림", emoji: "🐟", cat: "hearty", level: 2, time: 30, serve: 2, ing: ["고등어", "무", "고춧가루", "간장", "양파"], tip: "비린내는 청주 한 스푼으로 잡고, 뚜껑 열고 졸이세요." },
+        { name: "오징어볶음", emoji: "🦑", cat: "hearty", level: 2, time: 25, serve: 2, ing: ["오징어", "양배추", "양파", "고추장", "대파"], tip: "센 불에 빠르게, 물이 생기면 따라내며 볶아야 안 질겨요." },
+        { name: "두부두루치기", emoji: "🌶️", cat: "hearty", level: 2, time: 25, serve: 2, ing: ["두부", "돼지고기", "김치", "고추장", "대파"], tip: "고기·김치 볶다 큼직한 두부 넣고 졸이면 밥도둑 완성." },
+        { name: "떡갈비", emoji: "🍖", cat: "hearty", level: 3, time: 40, serve: 2, ing: ["다진고기", "양파", "간장", "빵가루", "가래떡"], tip: "치댄 고기에 다진 떡을 섞으면 쫀득한 식감이 살아요." },
+        { name: "LA갈비 구이", emoji: "🥩", cat: "hearty", level: 2, time: 25, serve: 2, ing: ["LA갈비", "간장", "배", "마늘", "설탕"], tip: "간 배에 30분 재우면 부드럽고 달큰. 센 불에 빠르게 구워요." },
+        { name: "너비아니", emoji: "🥩", cat: "hearty", level: 2, time: 30, serve: 2, ing: ["다진소고기", "간장", "배", "양파", "참기름"], tip: "다진 고기를 넓적하게 빚어 양념에 재웠다 구우면 궁중식." },
+        { name: "코다리찜", emoji: "🐟", cat: "hearty", level: 3, time: 35, serve: 2, ing: ["코다리", "콩나물", "고춧가루", "간장", "미나리"], tip: "콩나물을 듬뿍 깔고 쪄내면 아삭함과 매콤함이 잘 어울려요." },
+        // ===== 가정식 대용량 (4인 이상, serve: 4) =====
+        { name: "소고기 채소 볶음밥(대)", emoji: "🍚", cat: "bap", level: 2, time: 25, serve: 4, ing: ["밥", "소고기", "양파", "당근", "굴소스"], tip: "큰 팬에 두세 번 나눠 볶아야 밥알이 고슬고슬해요." },
+        { name: "비빔밥 한 대접", emoji: "🥗", cat: "bap", level: 1, time: 25, serve: 4, ing: ["밥", "시금치", "콩나물", "당근", "고추장"], tip: "나물을 미리 무쳐 두면 4인분도 금방 차려져요." },
+        { name: "잔치국수 한 솥", emoji: "🍜", cat: "noodle", level: 2, time: 30, serve: 4, ing: ["소면", "멸치육수", "애호박", "계란지단", "김가루"], tip: "육수 넉넉히, 소면은 인원수만큼 따로 삶아 헹궈요." },
+        { name: "미트소스 스파게티(대)", emoji: "🍝", cat: "noodle", level: 2, time: 35, serve: 4, ing: ["스파게티면", "다진소고기", "토마토소스", "양파", "마늘"], tip: "소스는 미리 한 솥 끓여 두고, 면은 먹기 직전에 삶기." },
+        { name: "골뱅이 소면", emoji: "🐚", cat: "noodle", level: 1, time: 25, serve: 4, ing: ["골뱅이", "소면", "오이", "양파", "초고추장"], tip: "새콤달콤 초고추장에 무쳐 모임 안주로 딱이에요." },
+        { name: "소고기 미역국 한 솥", emoji: "🍲", cat: "soup", level: 2, time: 40, serve: 4, ing: ["건미역", "소고기", "국간장", "참기름", "다진마늘"], tip: "크게 끓여 두고 남으면 한 그릇씩 소분 냉동." },
+        { name: "부대찌개 전골", emoji: "🍲", cat: "soup", level: 2, time: 30, serve: 4, ing: ["스팸", "소시지", "라면사리", "김치", "베이크드빈"], tip: "큰 전골냄비에 둘러 담고 끓이며 나눠 먹어요." },
+        { name: "김치찜 한 솥", emoji: "🍲", cat: "soup", level: 3, time: 50, serve: 4, ing: ["묵은지", "통삼겹", "양파", "대파", "들기름"], tip: "묵은지와 통삼겹을 푹 졸이면 그대로 4인 밥상." },
+        { name: "갈비탕(대)", emoji: "🍲", cat: "soup", level: 3, time: 100, serve: 4, ing: ["소갈비", "무", "대파", "당면", "다진마늘"], tip: "갈비는 데쳐서 핏물 빼고 푹 고아야 진하고 맑아요." },
+        { name: "닭한마리", emoji: "🍲", cat: "soup", level: 3, time: 60, serve: 4, ing: ["닭", "대파", "마늘", "떡", "칼국수면"], tip: "닭 익힌 국물에 떡·칼국수 사리를 더하면 푸짐해요." },
+        { name: "김치전 여러 장", emoji: "🥞", cat: "side", level: 1, time: 30, serve: 4, ing: ["김치", "부침가루", "청양고추", "식용유"], tip: "넓게 부쳐 가위로 잘라 나눠 먹으면 편해요." },
+        { name: "잡채 한 대접", emoji: "🥢", cat: "side", level: 3, time: 45, serve: 4, ing: ["당면", "시금치", "당근", "양파", "소고기"], tip: "채소와 당면을 따로 볶아 큰 볼에 한 번에 무치기." },
+        { name: "갈비찜(대)", emoji: "🍖", cat: "hearty", level: 3, time: 80, serve: 4, ing: ["소갈비", "무", "당근", "밤", "간장"], tip: "압력솥이면 시간 절반. 한 김 식혀 다시 데우면 더 맛있어요." },
+        { name: "찜닭(대)", emoji: "🍗", cat: "hearty", level: 3, time: 60, serve: 4, ing: ["닭", "감자", "당근", "당면", "간장"], tip: "큰 냄비에 넉넉히, 당면은 가장 마지막에 넣어요." },
+        { name: "보쌈 한 판", emoji: "🥩", cat: "hearty", level: 3, time: 70, serve: 4, ing: ["통삼겹", "된장", "대파", "마늘", "새우젓"], tip: "삶은 고기를 보온해 두면 손님상에 딱 좋아요." },
+        { name: "수육 한 솥", emoji: "🥩", cat: "hearty", level: 2, time: 70, serve: 4, ing: ["돼지고기", "된장", "통후추", "대파", "마늘"], tip: "통고기로 삶아 한 김 식힌 뒤 두툼하게 썰어요." },
+        { name: "닭볶음탕 큰 냄비", emoji: "🍗", cat: "hearty", level: 3, time: 50, serve: 4, ing: ["닭", "감자", "당근", "고추장", "대파"], tip: "닭은 데쳐 잡내를 빼고, 감자는 큼직하게 썰어요." },
+        { name: "제육볶음(대)", emoji: "🌶️", cat: "hearty", level: 2, time: 35, serve: 4, ing: ["앞다리살", "고추장", "양파", "대파", "마늘"], tip: "고기는 두 번에 나눠 볶아야 물이 안 생기고 불맛이 살아요." },
+        { name: "불고기 전골", emoji: "🍲", cat: "hearty", level: 2, time: 35, serve: 4, ing: ["소불고기감", "양파", "당근", "버섯", "당면"], tip: "육수 부어 자작하게, 당면 넣고 끓이며 먹어요." },
+        { name: "등갈비찜", emoji: "🍖", cat: "hearty", level: 3, time: 80, serve: 4, ing: ["등갈비", "감자", "당근", "간장", "대파"], tip: "등갈비는 핏물 빼고 한 번 데친 뒤 졸여야 깔끔해요." },
+        { name: "해물찜", emoji: "🦐", cat: "hearty", level: 3, time: 45, serve: 4, ing: ["콩나물", "새우", "오징어", "미더덕", "고춧가루"], tip: "콩나물 위에 해물을 올려 센 불에 빠르게 쪄요." },
+        { name: "닭강정", emoji: "🍗", cat: "hearty", level: 3, time: 45, serve: 4, ing: ["닭", "튀김가루", "물엿", "케첩", "마늘"], tip: "두 번 튀겨야 바삭하고, 양념은 버무려 바로 내요." },
+      ];
+
+      // ===== 밀프랩 (한 번에 만들어 두고 여러 끼 먹는) 메뉴 =====
+      const PREP_MENUS = [
+        { name: "닭가슴살 도시락", emoji: "🍱", kind: "도시락", portions: "3~4끼", keep: "냉장 4일", ing: ["닭가슴살", "현미밥", "브로콜리", "방울토마토"], tip: "닭가슴살은 한 번에 구워 식힌 뒤 소분하고, 채소는 살짝만 데쳐 아삭하게." },
+        { name: "소불고기", emoji: "🥩", kind: "메인", portions: "4끼", keep: "냉장 4일 · 냉동 2주", ing: ["소불고기감", "양파", "당근", "간장", "설탕"], tip: "양념해서 냉동해 두면 먹을 때 굽기만 하면 끝." },
+        { name: "제육볶음", emoji: "🌶️", kind: "메인", portions: "4끼", keep: "냉장 3일", ing: ["앞다리살", "고추장", "양파", "대파"], tip: "한 번에 크게 볶아 소분, 데울 때 물 약간 넣으면 촉촉해요." },
+        { name: "닭볶음탕", emoji: "🍗", kind: "메인", portions: "4끼", keep: "냉장 4일", ing: ["닭", "감자", "당근", "고추장", "간장"], tip: "식혀서 한 끼씩 소분 냉장. 감자는 큼직해야 안 부서져요." },
+        { name: "토마토 미트소스", emoji: "🍅", kind: "소스", portions: "5끼", keep: "냉장 5일 · 냉동 1달", ing: ["다진소고기", "토마토소스", "양파", "마늘"], tip: "한 솥 끓여 두면 파스타·밥·토스트에 두루 써요." },
+        { name: "카레", emoji: "🍛", kind: "메인", portions: "4끼", keep: "냉장 4일 · 냉동 2주", ing: ["고형카레", "감자", "당근", "양파", "고기"], tip: "냉동할 땐 감자를 빼야 퍼석해지지 않아요." },
+        { name: "소고기 장조림", emoji: "🥩", kind: "반찬", portions: "7끼", keep: "냉장 2주", ing: ["홍두깨살", "간장", "마늘", "꽈리고추", "메추리알"], tip: "짭짤하게 조려 두면 오래 먹는 든든한 밑반찬." },
+        { name: "멸치볶음", emoji: "🐟", kind: "반찬", portions: "10끼", keep: "냉장 2주", ing: ["잔멸치", "간장", "물엿", "견과류"], tip: "멸치를 기름 없이 한 번 볶아 비린내를 날린 뒤 양념하기." },
+        { name: "진미채볶음", emoji: "🦑", kind: "반찬", portions: "8끼", keep: "냉장 2주", ing: ["진미채", "고추장", "물엿", "마요네즈"], tip: "양념을 한 번 데친 뒤 무치고 마요 약간 넣으면 안 딱딱해요." },
+        { name: "콩자반", emoji: "🫘", kind: "반찬", portions: "10끼", keep: "냉장 2주", ing: ["검은콩", "간장", "물엿", "깨"], tip: "콩을 불려 푹 삶은 뒤 약불에서 졸이면 윤기가 나요." },
+        { name: "계란장조림", emoji: "🥚", kind: "반찬", portions: "6끼", keep: "냉장 1주", ing: ["삶은계란", "간장", "양파", "청양고추"], tip: "반숙으로 삶아 간장물에 재우면 더 부드럽고 맛있어요." },
+        { name: "잡채", emoji: "🥢", kind: "메인", portions: "4끼", keep: "냉장 3일", ing: ["당면", "시금치", "당근", "양파", "간장"], tip: "채소와 당면을 따로 볶아 마지막에 무쳐야 안 불어요." },
+        { name: "나물 3종", emoji: "🥬", kind: "반찬", portions: "5끼", keep: "냉장 3일", ing: ["시금치", "콩나물", "애호박", "참기름"], tip: "데쳐서 무치면 끝. 색깔별로 도시락 채우기 좋아요." },
+        { name: "두부조림", emoji: "🟫", kind: "반찬", portions: "4끼", keep: "냉장 4일", ing: ["두부", "간장", "고춧가루", "대파"], tip: "두부를 노릇하게 구운 뒤 조리면 덜 부서지고 간이 잘 배요." },
+        { name: "소고기뭇국", emoji: "🍲", kind: "국물", portions: "5끼", keep: "냉장 4일 · 냉동 2주", ing: ["소고기", "무", "대파", "국간장"], tip: "크게 끓여 한 그릇씩 냉동해 두면 든든한 국." },
+        { name: "미역국", emoji: "🍲", kind: "국물", portions: "5끼", keep: "냉동 2주", ing: ["건미역", "소고기", "국간장", "참기름"], tip: "끓일수록 진해져요. 식혀서 소분해 냉동." },
+        { name: "닭가슴살 야채볶음", emoji: "🍗", kind: "도시락", portions: "4끼", keep: "냉장 4일", ing: ["닭가슴살", "파프리카", "양파", "간장"], tip: "간단 간장 베이스로 볶아 밥과 함께 도시락으로." },
+        { name: "오븐 구운 채소", emoji: "🥕", kind: "도시락", portions: "4끼", keep: "냉장 4일", ing: ["단호박", "브로콜리", "파프리카", "올리브유"], tip: "200도 25분. 도시락 채소칸 채우기 딱 좋아요." },
+        { name: "부리토 볼", emoji: "🌯", kind: "도시락", portions: "4끼", keep: "냉장 4일", ing: ["밥", "닭고기", "콩", "옥수수", "살사"], tip: "재료를 칸 나눠 담아 두고 먹을 때 비벼요." },
+        { name: "어묵볶음", emoji: "🍢", kind: "반찬", portions: "6끼", keep: "냉장 5일", ing: ["어묵", "간장", "설탕", "대파"], tip: "물엿을 살짝 넣어 졸이면 식어도 굳지 않아요." },
+      ];
+
+      const CAT = { all: "전체", bap: "밥·한그릇", noodle: "면", soup: "국물·찌개", side: "간단·한 접시", hearty: "든든하게" };
+      const CAT_ORDER = ["all", "bap", "noodle", "soup", "side", "hearty"];
+      const LEVELS = [
+        { v: 0, label: "전체" },
+        { v: 1, label: "⚡ 초간단" },
+        { v: 2, label: "🍳 보통" },
+        { v: 3, label: "🔥 제대로" },
+      ];
+      const LEVEL_TAG = { 1: "초간단", 2: "보통", 3: "제대로" };
+      const SERVES = [
+        { v: 0, label: "전체" },
+        { v: 1, label: "🧍 1인" },
+        { v: 2, label: "👥 2인" },
+        { v: 4, label: "👨‍👩‍👧‍👦 대용량" },
+      ];
+      const SERVE_TAG = { 1: "🧍 1인", 2: "👥 2인 가정", 4: "👨‍👩‍👧‍👦 대용량 4인+" };
+
+      // 항상 있다고 가정할 수 있는 기본 양념/재료
+      const STAPLES = ["소금", "설탕", "후추", "맛소금", "식용유", "올리브유", "참기름", "들기름", "물", "간장", "국간장", "고춧가루", "식초", "케첩", "마요네즈", "굴소스", "물엿", "다진마늘", "부침가루", "밀가루", "빵가루"];
+
+      const QUICK_ADDS = ["계란", "김치", "두부", "대파", "양파", "마늘", "감자", "당근", "돼지고기", "닭고기", "스팸", "어묵", "치즈", "우유", "밥", "라면"];
+
+      // 재료 이름 -> 아이콘 (구체적인 것 먼저)
+      const ING_EMOJI = [
+        [["방울토마토", "토마토"], "🍅"],
+        [["파프리카", "피망"], "🫑"],
+        [["청양고추", "고춧", "고추장", "고추"], "🌶️"],
+        [["양파"], "🧅"],
+        [["대파", "쪽파", "실파"], "🌿"],
+        [["마늘"], "🧄"],
+        [["당근"], "🥕"],
+        [["감자"], "🥔"],
+        [["고구마"], "🍠"],
+        [["애호박", "호박", "오이"], "🥒"],
+        [["가지"], "🍆"],
+        [["옥수수"], "🌽"],
+        [["버섯", "양송이", "표고", "팽이"], "🍄"],
+        [["양배추", "배추", "상추", "시금치", "깻잎", "부추", "나물"], "🥬"],
+        [["콩나물", "숙주"], "🌱"],
+        [["김치"], "🥬"],
+        [["계란", "달걀"], "🥚"],
+        [["두부", "순두부"], "🧈"],
+        [["치즈"], "🧀"],
+        [["우유", "생크림"], "🥛"],
+        [["버터"], "🧈"],
+        [["삼겹", "돼지", "제육", "앞다리", "목살", "베이컨"], "🥓"],
+        [["소고기", "소불고기", "불고기", "양지", "등심", "사태", "차돌"], "🥩"],
+        [["닭", "치킨"], "🍗"],
+        [["스팸", "햄", "런천"], "🥫"],
+        [["소시지"], "🌭"],
+        [["새우", "해물", "조개", "바지락", "홍합"], "🦐"],
+        [["오징어", "낙지", "주꾸미", "문어"], "🦑"],
+        [["고등어", "코다리", "북어", "명태", "생선", "갈치", "꽁치", "연어"], "🐟"],
+        [["참치"], "🐟"],
+        [["어묵", "오뎅"], "🍢"],
+        [["만두"], "🥟"],
+        [["떡볶이떡", "떡국떡", "가래떡", "떡"], "🍡"],
+        [["라면", "스파게티", "파스타", "소면", "국수", "우동", "당면", "쫄면", "칼국수", "메밀", "면"], "🍜"],
+        [["식빵", "빵", "토스트", "또띠아", "바게트"], "🍞"],
+        [["밥", "쌀", "공기밥", "누룽지"], "🍚"],
+        [["김가루", "김"], "🍙"],
+        [["미역", "다시마"], "🌿"],
+        [["카레"], "🍛"],
+        [["사과"], "🍎"],
+        [["배"], "🍐"],
+        [["레몬"], "🍋"],
+        [["설탕", "소금", "후추", "맛소금"], "🧂"],
+        [["간장", "된장", "쌈장", "두반장", "춘장", "소스", "케첩", "마요", "굴소스", "쯔유", "액젓", "새우젓"], "🥫"],
+        [["식용유", "올리브유", "참기름", "들기름", "기름"], "🫗"],
+        [["부침가루", "밀가루", "빵가루", "전분", "튀김가루"], "🥡"],
+        [["물", "육수", "다시"], "💧"],
+      ];
+
+      // ===== 저장 키 =====
+      const FAV_KEY = "kitchen-favorites-v1";
+      const FRIDGE_KEY = "kitchen-fridge-v1";
+      const USERMENU_KEY = "kitchen-usermenus-v1";
+      const OVERRIDE_KEY = "kitchen-overrides-v1";
+      const HIDDEN_KEY = "kitchen-hidden-v1";
+
+      // ===== 상태 =====
+      let favorites = load(FAV_KEY, []);
+      let fridge = load(FRIDGE_KEY, []);
+      let userMenus = load(USERMENU_KEY, []);
+      let overrides = load(OVERRIDE_KEY, {});
+      let hidden = load(HIDDEN_KEY, []);
+      const rollState = { cat: "all", level: 0, serve: 0, recent: [], current: null, rolling: false };
+      let editingId = null;
+      let rollTimer = null;
+      let toastTimer = null;
+
+      const qs = (s) => document.querySelector(s);
+      const qsa = (s) => document.querySelectorAll(s);
+      const el = {
+        catChips: qs("#catChips"), levelChips: qs("#levelChips"), serveChips: qs("#serveChips"),
+        card: qs("#resultCard"), emoji: qs("#resultEmoji"), name: qs("#resultName"),
+        tags: qs("#resultTags"), ing: qs("#resultIng"), tip: qs("#resultTip"),
+        actions: qs("#resultActions"), favBtn: qs("#favBtn"), ytLink: qs("#ytLink"),
+        recipeLink: qs("#recipeLink"), roll: qs("#rollBtn"), count: qs("#count"),
+        favs: qs("#favs"), favList: qs("#favList"),
+        fridgeInput: qs("#fridgeInput"), fridgeAddBtn: qs("#fridgeAddBtn"), quickAdds: qs("#quickAdds"),
+        fridgeGrid: qs("#fridgeGrid"), fridgeEmpty: qs("#fridgeEmpty"), fridgeCount: qs("#fridgeCount"), fridgeClear: qs("#fridgeClear"),
+        staplesToggle: qs("#staplesToggle"), cookContent: qs("#cookContent"),
+        prepRandom: qs("#prepRandomBtn"), prepFeatured: qs("#prepFeatured"), prepList: qs("#prepList"),
+        menuForm: qs("#menuForm"), menuFormTitle: qs("#menuFormTitle"),
+        mName: qs("#mName"), mEmoji: qs("#mEmoji"), mCat: qs("#mCat"), mLevel: qs("#mLevel"), mServe: qs("#mServe"),
+        mTime: qs("#mTime"), mIng: qs("#mIng"), mTip: qs("#mTip"),
+        menuCancel: qs("#menuCancel"), menuTotal: qs("#menuTotal"), menuSearch: qs("#menuSearch"), menuList: qs("#menuList"),
+      };
+
+      init();
+
+      function init() {
+        renderChips(el.catChips, CAT_ORDER.map((k) => ({ v: k, label: CAT[k] })), "cat");
+        renderChips(el.levelChips, LEVELS, "level");
+        renderChips(el.serveChips, SERVES, "serve");
+        renderFavs();
+        updateRollCount();
+        el.roll.addEventListener("click", roll);
+        el.favBtn.addEventListener("click", toggleCurrentFav);
+
+        qsa(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+        renderQuickAdds();
+        el.fridgeAddBtn.addEventListener("click", () => { addFridge(el.fridgeInput.value); el.fridgeInput.value = ""; el.fridgeInput.focus(); });
+        el.fridgeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { addFridge(el.fridgeInput.value); el.fridgeInput.value = ""; } });
+        el.fridgeClear.addEventListener("click", () => { if (confirm("냉장고를 모두 비울까요?")) { fridge = []; save(FRIDGE_KEY, fridge); renderFridge(); } });
+        renderFridge();
+
+        el.staplesToggle.addEventListener("change", renderCook);
+        el.menuForm.addEventListener("submit", submitMenu);
+        el.menuCancel.addEventListener("click", resetMenuForm);
+        el.menuSearch.addEventListener("input", renderMenuList);
+        el.prepRandom.addEventListener("click", pickRandomPrep);
+
+        showTab("roll");
+      }
+
+      // ===== 공통 저장 =====
+      function load(key, fb) { try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fb : v; } catch (e) { return fb; } }
+      function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+      // ===== 메뉴 합치기 (내장 + 수정 + 직접추가, 숨김 제외) =====
+      function allMenus() {
+        const out = [];
+        BUILTIN_MENUS.forEach((m, i) => {
+          const id = "b" + i;
+          if (hidden.indexOf(id) !== -1) return;
+          out.push(Object.assign({ serve: 1 }, m, overrides[id] || {}, { id: id, builtin: true }));
+        });
+        userMenus.forEach((m) => out.push(Object.assign({ serve: 1 }, m, { builtin: false })));
+        return out;
+      }
+
+      // ===== 탭 전환 =====
+      function showTab(name) {
+        qsa(".tab-panel").forEach((p) => { p.hidden = true; });
+        const panel = qs("#tab-" + name);
+        if (panel) panel.hidden = false;
+        qsa(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+        if (name === "fridge") renderFridge();
+        if (name === "cook") renderCook();
+        if (name === "prep") renderPrep();
+        if (name === "menu") renderMenuList();
+      }
+
+      // ===== 룰렛 (추천) =====
+      function renderChips(container, items, key) {
+        container.innerHTML = "";
+        items.forEach((item) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "chip" + (rollState[key] === item.v ? " active" : "");
+          btn.textContent = item.label;
+          btn.addEventListener("click", () => { rollState[key] = item.v; renderChips(container, items, key); updateRollCount(); });
+          container.appendChild(btn);
+        });
+      }
+
+      function pool() {
+        return allMenus().filter((m) =>
+          (rollState.cat === "all" || m.cat === rollState.cat) &&
+          (rollState.level === 0 || m.level === rollState.level) &&
+          (rollState.serve === 0 || m.serve === rollState.serve));
+      }
+
+      function updateRollCount() {
+        const n = pool().length;
+        if (n === 0) {
+          el.count.textContent = "이 조건엔 메뉴가 없어요 😅 필터를 풀거나 메뉴를 추가해 보세요.";
+          el.count.classList.add("empty");
+          el.roll.disabled = true;
+        } else {
+          el.count.textContent = "이 조건에서 고를 수 있는 메뉴 " + n + "개";
+          el.count.classList.remove("empty");
+          el.roll.disabled = false;
+        }
+      }
+
+      function pickRandom(list) {
+        const avoidCount = Math.min(rollState.recent.length, Math.max(0, list.length - 1), 4);
+        const avoid = new Set(rollState.recent.slice(-avoidCount));
+        let cands = list.filter((m) => !avoid.has(m.name));
+        if (!cands.length) cands = list;
+        return cands[Math.floor(Math.random() * cands.length)];
+      }
+
+      function roll() {
+        if (rollState.rolling) return;
+        const list = pool();
+        if (!list.length) return;
+        const pick = pickRandom(list);
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reduce || list.length === 1) { settle(pick); return; }
+        rollState.rolling = true;
+        el.roll.disabled = true;
+        el.card.classList.remove("pop");
+        el.card.classList.add("teasing");
+        hideDetails();
+        let elapsed = 0, delay = 55;
+        const tick = () => {
+          const teaser = list[Math.floor(Math.random() * list.length)];
+          el.emoji.textContent = teaser.emoji;
+          el.name.textContent = teaser.name;
+          elapsed += delay; delay += 7;
+          if (elapsed < 760) rollTimer = setTimeout(tick, delay);
+          else settle(pick);
+        };
+        tick();
+      }
+
+      function settle(menu) {
+        clearTimeout(rollTimer);
+        rollState.rolling = false;
+        el.roll.disabled = false;
+        el.card.classList.remove("teasing");
+        showMenu(menu);
+        popCard();
+        el.roll.textContent = "🎲 다른 거 추천!";
+        recordRecent(menu.name);
+      }
+
+      function recordRecent(name) { rollState.recent.push(name); if (rollState.recent.length > 8) rollState.recent.shift(); }
+      function popCard() { el.card.classList.remove("pop"); void el.card.offsetWidth; el.card.classList.add("pop"); }
+
+      function hideDetails() { el.tags.innerHTML = ""; el.ing.innerHTML = ""; el.tip.hidden = true; el.actions.hidden = true; }
+
+      function ytUrl(name) { return "https://www.youtube.com/results?search_query=" + encodeURIComponent(name + " 레시피"); }
+      function recipeUrl(name) { return "https://www.10000recipe.com/recipe/list.html?q=" + encodeURIComponent(name); }
+
+      function showMenu(menu) {
+        rollState.current = menu;
+        el.emoji.textContent = menu.emoji;
+        el.name.textContent = menu.name;
+        el.tags.innerHTML = "";
+        addTag(CAT[menu.cat], "cat");
+        addTag("⏱ 약 " + menu.time + "분", "time");
+        addTag(LEVEL_TAG[menu.level], "level" + menu.level);
+        addTag(SERVE_TAG[menu.serve] || SERVE_TAG[1], "serve" + (menu.serve || 1));
+        el.ing.innerHTML = "";
+        menu.ing.forEach((name) => { const s = document.createElement("span"); s.className = "ing"; s.textContent = name; el.ing.appendChild(s); });
+        if (menu.tip) { el.tip.textContent = "💡 " + menu.tip; el.tip.hidden = false; } else { el.tip.hidden = true; }
+        el.ytLink.href = ytUrl(menu.name);
+        el.recipeLink.href = recipeUrl(menu.name);
+        el.actions.hidden = false;
+        updateFavBtn();
+      }
+
+      function addTag(text, cls) { const s = document.createElement("span"); s.className = "tag " + cls; s.textContent = text; el.tags.appendChild(s); }
+
+      function updateFavBtn() {
+        const on = rollState.current && favorites.indexOf(rollState.current.name) !== -1;
+        el.favBtn.classList.toggle("on", !!on);
+        el.favBtn.textContent = on ? "❤️ 찜됨" : "🤍 찜";
+      }
+
+      function toggleCurrentFav() {
+        if (!rollState.current) return;
+        const name = rollState.current.name;
+        const i = favorites.indexOf(name);
+        if (i >= 0) favorites.splice(i, 1); else favorites.unshift(name);
+        save(FAV_KEY, favorites);
+        updateFavBtn();
+        renderFavs();
+      }
+
+      function renderFavs() {
+        if (!favorites.length) { el.favs.hidden = true; el.favList.innerHTML = ""; return; }
+        el.favs.hidden = false;
+        el.favList.innerHTML = "";
+        const menus = allMenus();
+        favorites.forEach((name) => {
+          const menu = menus.find((m) => m.name === name);
+          if (!menu) return;
+          const chip = document.createElement("span");
+          chip.className = "fav-chip";
+          const label = document.createElement("span");
+          label.className = "fav-name";
+          label.textContent = menu.emoji + " " + name;
+          label.addEventListener("click", () => { showTab("roll"); showMenu(menu); popCard(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+          const rm = document.createElement("button");
+          rm.type = "button";
+          rm.setAttribute("aria-label", name + " 찜 해제");
+          rm.textContent = "✕";
+          rm.addEventListener("click", () => { const k = favorites.indexOf(name); if (k >= 0) favorites.splice(k, 1); save(FAV_KEY, favorites); updateFavBtn(); renderFavs(); });
+          chip.appendChild(label); chip.appendChild(rm);
+          el.favList.appendChild(chip);
+        });
+      }
+
+      // ===== 냉장고 =====
+      function normIng(s) {
+        let t = String(s).replace(/\s+/g, "");
+        t = t.replace(/^(잘익은|익은|신|냉동|생|건|다진|얇게썬|채썬|잘게썬|슬라이스|불린)/, "");
+        t = t.replace(/(캔|가루|사리|채|살|감)$/, "");
+        return t;
+      }
+      function ingMatch(a, b) {
+        const x = normIng(a), y = normIng(b);
+        if (!x || !y) return false;
+        if (x === y) return true;
+        if (x.length >= 2 && y.length >= 2 && (x.indexOf(y) !== -1 || y.indexOf(x) !== -1)) return true;
+        return false;
+      }
+      function isStaple(ing) { for (let i = 0; i < STAPLES.length; i++) { if (ingMatch(ing, STAPLES[i])) return true; } return false; }
+      function ingredientEmoji(name) {
+        const n = String(name).replace(/\s+/g, "");
+        for (let i = 0; i < ING_EMOJI.length; i++) {
+          const keys = ING_EMOJI[i][0];
+          for (let j = 0; j < keys.length; j++) { if (n.indexOf(keys[j]) !== -1) return ING_EMOJI[i][1]; }
+        }
+        return "🥡";
+      }
+
+      function renderQuickAdds() {
+        el.quickAdds.innerHTML = "";
+        QUICK_ADDS.forEach((name) => {
+          const b = document.createElement("button");
+          b.type = "button"; b.className = "quick-add"; b.textContent = name;
+          b.addEventListener("click", () => addFridge(name));
+          el.quickAdds.appendChild(b);
+        });
+      }
+
+      function addFridge(raw) {
+        const parts = String(raw).split(",").map((s) => s.trim()).filter(Boolean);
+        let added = 0;
+        parts.forEach((name) => {
+          if (name.length > 20) name = name.slice(0, 20);
+          const exists = fridge.some((f) => normIng(f.name) === normIng(name));
+          if (!exists) { fridge.push({ name: name }); added++; }
+        });
+        if (added) { save(FRIDGE_KEY, fridge); renderFridge(); }
+        return added;
+      }
+
+      function removeFridge(name) {
+        fridge = fridge.filter((f) => f.name !== name);
+        save(FRIDGE_KEY, fridge);
+        renderFridge();
+      }
+
+      function renderFridge() {
+        el.fridgeGrid.innerHTML = "";
+        el.fridgeEmpty.hidden = fridge.length > 0;
+        fridge.forEach((item) => {
+          const tile = document.createElement("div"); tile.className = "food";
+          const e = document.createElement("span"); e.className = "food-emoji"; e.textContent = ingredientEmoji(item.name); tile.appendChild(e);
+          const nm = document.createElement("span"); nm.className = "food-name"; nm.textContent = item.name; tile.appendChild(nm);
+          const x = document.createElement("button"); x.className = "food-x"; x.type = "button"; x.setAttribute("aria-label", item.name + " 빼기"); x.textContent = "✕";
+          x.addEventListener("click", () => removeFridge(item.name));
+          tile.appendChild(x);
+          el.fridgeGrid.appendChild(tile);
+        });
+        el.fridgeCount.textContent = fridge.length ? "냉장고에 재료 " + fridge.length + "개" : "";
+        el.fridgeClear.hidden = fridge.length === 0;
+      }
+
+      // ===== 냉장고 요리 =====
+      function analyzeMenu(menu, fridgeNames, assumeStaples) {
+        const missing = [];
+        let matched = 0;
+        menu.ing.forEach((ing) => {
+          let have = false;
+          if (assumeStaples && isStaple(ing)) have = true;
+          else have = fridgeNames.some((f) => ingMatch(ing, f));
+          if (have) matched++; else missing.push(ing);
+        });
+        return { matched: matched, total: menu.ing.length, missing: missing };
+      }
+
+      function renderCook() {
+        const box = el.cookContent;
+        box.innerHTML = "";
+        const names = fridge.map((f) => f.name);
+        if (!names.length) {
+          box.appendChild(infoBlock("냉장고가 비어 있어요.", "먼저 ‘냉장고’ 탭에서 가진 재료를 넣어 주세요.", "🧊 냉장고 채우러 가기", () => showTab("fridge")));
+          return;
+        }
+        const assume = el.staplesToggle.checked;
+        const analyzed = allMenus().map((m) => ({ m: m, a: analyzeMenu(m, names, assume) }));
+        const ready = analyzed.filter((x) => x.a.missing.length === 0).sort((p, q) => q.a.matched - p.a.matched);
+        const almost = analyzed.filter((x) => x.a.missing.length >= 1 && x.a.missing.length <= 2)
+          .sort((p, q) => (p.a.missing.length - q.a.missing.length) || (q.a.matched - p.a.matched));
+
+        const summary = document.createElement("p");
+        summary.className = "count";
+        summary.textContent = "바로 가능 " + ready.length + "개 · 거의 가능 " + almost.length + "개";
+        box.appendChild(summary);
+
+        const randPool = ready.length ? ready : almost;
+        if (randPool.length) {
+          const rb = document.createElement("button");
+          rb.className = "roll-btn cook-roll"; rb.type = "button";
+          rb.textContent = "🎲 가능한 메뉴 중 랜덤 추천";
+          rb.addEventListener("click", () => {
+            const pick = randPool[Math.floor(Math.random() * randPool.length)];
+            showTab("roll"); showMenu(pick.m); popCard(); window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+          box.appendChild(rb);
+        }
+
+        if (!ready.length && !almost.length) {
+          box.appendChild(infoBlock("딱 맞는 메뉴가 없어요.", "재료를 조금 더 넣거나, 위의 ‘기본 양념 있다고 치기’를 켜 보세요.", null, null));
+          return;
+        }
+        if (ready.length) { box.appendChild(sectionTitle("✅ 지금 바로 가능 (" + ready.length + ")")); ready.forEach((x) => box.appendChild(cookCard(x.m, x.a))); }
+        if (almost.length) { box.appendChild(sectionTitle("🛒 거의 다 됐어요 · 1~2개만 사면 OK (" + almost.length + ")")); almost.forEach((x) => box.appendChild(cookCard(x.m, x.a))); }
+      }
+
+      function cookCard(menu, a) {
+        const card = document.createElement("div"); card.className = "cook-card";
+        const emo = document.createElement("div"); emo.className = "cook-emoji"; emo.textContent = menu.emoji; card.appendChild(emo);
+        const body = document.createElement("div"); body.className = "cook-body";
+        const nm = document.createElement("div"); nm.className = "cook-name"; nm.textContent = menu.name; body.appendChild(nm);
+        const meta = document.createElement("div"); meta.className = "cook-meta";
+        meta.textContent = CAT[menu.cat] + " · ⏱ 약 " + menu.time + "분 · 재료 " + a.matched + "/" + a.total + " 보유"; body.appendChild(meta);
+        const miss = document.createElement("div"); miss.className = "cook-missing";
+        if (a.missing.length === 0) { const ok = document.createElement("span"); ok.className = "miss ok"; ok.textContent = "재료 다 있어요!"; miss.appendChild(ok); }
+        else { a.missing.forEach((mm) => { const s = document.createElement("span"); s.className = "miss"; s.textContent = "+ " + mm; miss.appendChild(s); }); }
+        body.appendChild(miss);
+        const links = document.createElement("div"); links.className = "cook-links";
+        links.appendChild(recipeAnchor(menu, "yt")); links.appendChild(recipeAnchor(menu, "recipe"));
+        body.appendChild(links);
+        card.appendChild(body);
+        return card;
+      }
+
+      function recipeAnchor(menu, kind) {
+        const a = document.createElement("a"); a.target = "_blank"; a.rel = "noopener";
+        if (kind === "yt") { a.className = "recipe-link yt"; a.textContent = "▶ 유튜브"; a.href = ytUrl(menu.name); }
+        else { a.className = "recipe-link"; a.textContent = "📖 레시피"; a.href = recipeUrl(menu.name); }
+        return a;
+      }
+
+      function infoBlock(title, desc, btnText, onClick) {
+        const d = document.createElement("div"); d.className = "info-block";
+        const h = document.createElement("strong"); h.textContent = title; d.appendChild(h);
+        const p = document.createElement("p"); p.textContent = desc; d.appendChild(p);
+        if (btnText) { const b = document.createElement("button"); b.type = "button"; b.className = "primary-sm"; b.textContent = btnText; if (onClick) b.addEventListener("click", onClick); d.appendChild(b); }
+        return d;
+      }
+      function sectionTitle(t) { const h = document.createElement("h3"); h.className = "cook-section-title"; h.textContent = t; return h; }
+
+      // ===== 밀프랩 =====
+      let lastPrep = null;
+      function renderPrep() {
+        el.prepList.innerHTML = "";
+        el.prepList.appendChild(sectionTitle("📋 밀프랩 메뉴 " + PREP_MENUS.length + "종"));
+        PREP_MENUS.forEach((m) => el.prepList.appendChild(prepCard(m)));
+      }
+      function pickRandomPrep() {
+        let pick = PREP_MENUS[Math.floor(Math.random() * PREP_MENUS.length)];
+        if (PREP_MENUS.length > 1 && lastPrep && pick.name === lastPrep) pick = PREP_MENUS[(PREP_MENUS.indexOf(pick) + 1) % PREP_MENUS.length];
+        lastPrep = pick.name;
+        el.prepFeatured.innerHTML = "";
+        const wrap = document.createElement("div"); wrap.className = "result-card pop";
+        const emo = document.createElement("div"); emo.className = "result-emoji"; emo.textContent = pick.emoji; wrap.appendChild(emo);
+        const nm = document.createElement("h2"); nm.className = "result-name"; nm.textContent = pick.name; wrap.appendChild(nm);
+        const tags = document.createElement("div"); tags.className = "result-tags";
+        tags.appendChild(prepTag(pick.kind, "kind")); tags.appendChild(prepTag("🍱 " + pick.portions, "portion")); tags.appendChild(prepTag("❄️ " + pick.keep, "keep"));
+        wrap.appendChild(tags);
+        const ings = document.createElement("div"); ings.className = "result-ing";
+        pick.ing.forEach((i) => { const s = document.createElement("span"); s.className = "ing"; s.textContent = i; ings.appendChild(s); });
+        wrap.appendChild(ings);
+        const tip = document.createElement("p"); tip.className = "result-tip"; tip.textContent = "💡 " + pick.tip; wrap.appendChild(tip);
+        const links = document.createElement("div"); links.className = "result-actions";
+        links.appendChild(recipeAnchor(pick, "yt")); links.appendChild(recipeAnchor(pick, "recipe"));
+        wrap.appendChild(links);
+        el.prepFeatured.appendChild(wrap);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      function prepCard(m) {
+        const card = document.createElement("div"); card.className = "cook-card";
+        const emo = document.createElement("div"); emo.className = "cook-emoji"; emo.textContent = m.emoji; card.appendChild(emo);
+        const body = document.createElement("div"); body.className = "cook-body";
+        const nm = document.createElement("div"); nm.className = "cook-name"; nm.textContent = m.name; body.appendChild(nm);
+        const tags = document.createElement("div"); tags.className = "prep-tags";
+        tags.appendChild(prepTag(m.kind, "kind")); tags.appendChild(prepTag("🍱 " + m.portions, "portion")); tags.appendChild(prepTag("❄️ " + m.keep, "keep"));
+        body.appendChild(tags);
+        const ings = document.createElement("div"); ings.className = "cook-missing";
+        m.ing.forEach((i) => { const s = document.createElement("span"); s.className = "ing"; s.textContent = i; ings.appendChild(s); });
+        body.appendChild(ings);
+        const tip = document.createElement("p"); tip.className = "result-tip"; tip.textContent = "💡 " + m.tip; tip.style.marginTop = "8px"; body.appendChild(tip);
+        const links = document.createElement("div"); links.className = "cook-links";
+        links.appendChild(recipeAnchor(m, "yt")); links.appendChild(recipeAnchor(m, "recipe"));
+        body.appendChild(links);
+        card.appendChild(body);
+        return card;
+      }
+      function prepTag(text, cls) { const s = document.createElement("span"); s.className = "ptag " + cls; s.textContent = text; return s; }
+
+      // ===== 메뉴 관리 =====
+      function renderMenuList() {
+        const q = (el.menuSearch.value || "").trim();
+        const list = allMenus();
+        el.menuTotal.textContent = list.length;
+        el.menuList.innerHTML = "";
+        const filtered = q ? list.filter((m) => m.name.indexOf(q) !== -1) : list;
+        if (!filtered.length) { el.menuList.appendChild(infoBlock("메뉴가 없어요.", q ? "검색 결과가 없습니다." : "위에서 새 메뉴를 추가해 보세요.", null, null)); return; }
+        filtered.forEach((m) => {
+          const row = document.createElement("div"); row.className = "menu-row";
+          const emo = document.createElement("span"); emo.className = "emo"; emo.textContent = m.emoji; row.appendChild(emo);
+          const info = document.createElement("div"); info.className = "info";
+          const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = m.name;
+          if (!m.builtin) { const b = document.createElement("span"); b.className = "badge custom"; b.textContent = "직접추가"; nm.appendChild(b); }
+          else if (overrides[m.id]) { const b = document.createElement("span"); b.className = "badge edited"; b.textContent = "수정됨"; nm.appendChild(b); }
+          info.appendChild(nm);
+          const mt = document.createElement("div"); mt.className = "mt"; mt.textContent = CAT[m.cat] + " · ⏱ " + m.time + "분 · " + LEVEL_TAG[m.level] + " · " + (SERVE_TAG[m.serve] || SERVE_TAG[1]); info.appendChild(mt);
+          row.appendChild(info);
+          const ops = document.createElement("div"); ops.className = "ops";
+          const ed = document.createElement("button"); ed.type = "button"; ed.className = "icon-btn"; ed.textContent = "수정"; ed.addEventListener("click", () => startEdit(m.id)); ops.appendChild(ed);
+          const del = document.createElement("button"); del.type = "button"; del.className = "icon-btn del"; del.textContent = "삭제";
+          del.addEventListener("click", () => { if (confirm("‘" + m.name + "’ 메뉴를 삭제할까요?")) deleteMenu(m.id); }); ops.appendChild(del);
+          row.appendChild(ops);
+          el.menuList.appendChild(row);
+        });
+      }
+
+      function startEdit(id) {
+        const m = allMenus().find((x) => x.id === id);
+        if (!m) return;
+        editingId = id;
+        el.menuFormTitle.textContent = "메뉴 수정";
+        el.mName.value = m.name; el.mEmoji.value = m.emoji; el.mCat.value = m.cat;
+        el.mLevel.value = String(m.level); el.mServe.value = String(m.serve || 1); el.mTime.value = m.time; el.mIng.value = m.ing.join(", "); el.mTip.value = m.tip || "";
+        el.menuCancel.hidden = false;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function resetMenuForm() {
+        editingId = null;
+        el.menuFormTitle.textContent = "새 메뉴 추가";
+        el.mName.value = ""; el.mEmoji.value = ""; el.mCat.value = "bap"; el.mLevel.value = "1"; el.mServe.value = "1"; el.mTime.value = ""; el.mIng.value = ""; el.mTip.value = "";
+        el.menuCancel.hidden = true;
+      }
+
+      function submitMenu(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        const name = (el.mName.value || "").trim();
+        const ing = (el.mIng.value || "").split(",").map((s) => s.trim()).filter(Boolean);
+        if (!name) { alert("메뉴 이름을 입력해 주세요."); return; }
+        if (!ing.length) { alert("재료를 한 가지 이상 입력해 주세요."); return; }
+        const data = {
+          name: name,
+          emoji: (el.mEmoji.value || "").trim() || "🍽️",
+          cat: el.mCat.value,
+          level: parseInt(el.mLevel.value, 10) || 1,
+          serve: parseInt(el.mServe.value, 10) || 1,
+          time: parseInt(el.mTime.value, 10) || 15,
+          ing: ing,
+          tip: (el.mTip.value || "").trim(),
+        };
+        if (editingId && editingId.charAt(0) === "b") { overrides[editingId] = data; save(OVERRIDE_KEY, overrides); }
+        else if (editingId && editingId.charAt(0) === "u") { const i = userMenus.findIndex((x) => x.id === editingId); if (i >= 0) userMenus[i] = Object.assign({}, data, { id: editingId }); save(USERMENU_KEY, userMenus); }
+        else { userMenus.push(Object.assign({}, data, { id: "u" + Date.now() })); save(USERMENU_KEY, userMenus); }
+        resetMenuForm();
+        renderMenuList();
+        updateRollCount();
+        renderFavs();
+        toast("저장됐어요 ✅");
+      }
+
+      function deleteMenu(id) {
+        if (id.charAt(0) === "u") { userMenus = userMenus.filter((x) => x.id !== id); save(USERMENU_KEY, userMenus); }
+        else { if (hidden.indexOf(id) === -1) hidden.push(id); save(HIDDEN_KEY, hidden); delete overrides[id]; save(OVERRIDE_KEY, overrides); }
+        if (editingId === id) resetMenuForm();
+        renderMenuList();
+        updateRollCount();
+        renderFavs();
+        toast("삭제됐어요 🗑️");
+      }
+
+      function toast(msg) {
+        let t = qs("#toast");
+        if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }
+        t.textContent = msg; t.classList.add("show");
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+      }
+    </script>
+  </body>
+</html>
