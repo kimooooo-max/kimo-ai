@@ -1,5 +1,5 @@
 /* 자취부엌 service worker — offline app shell */
-const CACHE = "jachi-kitchen-v1";
+const CACHE = "jachi-kitchen-v2";
 const ASSETS = [
   "./",
   "./index.html",
