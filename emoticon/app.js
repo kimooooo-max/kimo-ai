@@ -579,3 +579,9 @@ function drawStar(ctx, cx, cy, r, fill, strokeCol) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 updateInfo();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}

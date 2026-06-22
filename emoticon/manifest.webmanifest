@@ -1,0 +1,19 @@
+{
+  "name": "이모티콘 메이커",
+  "short_name": "이모티콘",
+  "description": "사진을 업로드해 카카오톡·LINE·OGQ 규격 이모티콘 스티커를 만들어보세요.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f0e17",
+  "theme_color": "#FF4757",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
