@@ -84,9 +84,10 @@
       .app-card:hover::before { opacity: 1; }
 
       /* Card accent colors */
-      .card-emoticon { --c1: #FF4757; --c2: #5352ED; }
-      .card-kitchen  { --c1: #00B894; --c2: #0984E3; }
-      .card-ledger   { --c1: #116b5c; --c2: #0b4d42; }
+      .card-emoticon  { --c1: #FF4757; --c2: #5352ED; }
+      .card-kitchen   { --c1: #00B894; --c2: #0984E3; }
+      .card-ledger    { --c1: #116b5c; --c2: #0b4d42; }
+      .card-cardnews  { --c1: #38BDF8; --c2: #A78BFA; }
 
       .app-card::before {
         background: linear-gradient(135deg, var(--c1, #fff), var(--c2, #aaa));
@@ -161,6 +162,14 @@
     </section>
 
     <nav class="apps">
+      <a class="app-card card-cardnews" href="./cardnews/">
+        <span class="card-icon">📰</span>
+        <span class="card-badge">New</span>
+        <p class="card-name">AI 카드뉴스 메이커</p>
+        <p class="card-desc">AI 트렌드·윈도우 팁·아이폰 기능을 Claude API로 카드뉴스 슬라이드로 자동 생성합니다.</p>
+        <span class="card-arrow">→</span>
+      </a>
+
       <a class="app-card card-emoticon" href="./emoticon/">
         <span class="card-icon">🎭</span>
         <span class="card-badge">New</span>
